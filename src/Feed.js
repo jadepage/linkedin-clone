@@ -1,19 +1,40 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./Feed.css";
 import CreateIcon from "@material-ui/icons/Create";
 import ImageIcon from "@material-ui/icons/Image";
 import InputOption from "./InputOption";
 import { CalendarViewDay, EventNote, Subscriptions } from "@material-ui/icons";
 import Post from "./Post";
-import { useFormControl } from "@material-ui/core";
+import { db } from "./firebase";
+import firebase from "firebase";
 
 function Feed() {
+  const [input, setInput] = useState("");
   const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    db.collection("posts")
+      .orderBy("timestamp", "desc")
+      .onSnapshot((snapshot) =>
+        setPosts(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+        )
+      );
+  }, []);
 
   const sendPost = (e) => {
     e.preventDefault();
 
-    setPosts([...posts])
+    db.collection("posts").add({
+      name: "Jade Page",
+      description: "This is a test",
+      message: input,
+      photoUrl: "",
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    });
   };
 
   return (
@@ -22,7 +43,11 @@ function Feed() {
         <div className="feed__input">
           <CreateIcon />
           <form action="">
-            <input type="text" />
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              type="text"
+            />
             <button onClick={sendPost} type="submit">
               Send
             </button>
@@ -40,14 +65,15 @@ function Feed() {
         </div>
       </div>
 
-      {posts.map((post) => (
-        <Post />
+      {posts.map(({ id, data: { name, description, message, photoUrl } }) => (
+        <Post
+          key={id}
+          name={name}
+          description={description}
+          message={message}
+          photoUrl={photoUrl}
+        />
       ))}
-      <Post
-        name="Jade Page"
-        description="this is a test"
-        message="Wow this worked"
-      />
     </div>
   );
 }
